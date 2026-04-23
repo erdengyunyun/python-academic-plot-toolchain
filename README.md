@@ -1,22 +1,16 @@
-# python-academic-plot-toolchain
-配置驱动 + 上下文隔离的学术图表自动化生成工具链
-# 面向学术出版的Python图表工具链
+# 学术出版图表自动化生成工具链
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+面向学术出版的Python图表自动化生成工具链，提供配置驱动架构与上下文隔离机制，支持多种学术出版场景模板。
 
-## 项目简介
+## 功能特性
 
-本项目构建了一套面向学术出版的Python图表工具链，旨在解决学术图表生成中的效率低、风格不统一、出版适配难等问题。工具链采用模块化架构，集成配置管理、样式渲染与多格式输出等核心模块，实现了从参数化规范到高质量矢量图的全流程自动生成。
-
-## 核心特性
-
-- **期刊模板化**：内置《计算机工程与应用》、IEEE Transactions、Nature/Science等期刊专用模板
-- **配置驱动**：支持YAML/JSON配置文件，实现"一次配置，全局生效"
-- **上下文管理**：PlotConfigContext实现配置原子化切换，避免跨图表配置污染
-- **多格式输出**：支持PNG、PDF、SVG、EPS等多种格式，自动优化矢量图
-- **合规性校验**：自动检查图表分辨率、字体、尺寸等是否符合期刊规范
-- **异常处理**：完善的异常处理机制，支持错误阶段追踪
+- **上下文隔离机制**：通过PlotConfigContext实现配置的原子化切换，解决matplotlib全局状态污染问题
+- **语义尺寸表达系统**：创新性的`(width_mode, aspect_mode)`二元组语义尺寸表达，将图形尺寸从"数值驱动"转变为"语义驱动"
+- **形式化约束模型**：建立页面约束的数学描述（PageConstraints四元组），实现版面布局的自动化计算
+- **多场景模板支持**：内置CEA、IEEE、Nature、Thesis、Book等多种学术出版场景模板
+- **多格式输出**：支持PNG、JPG、SVG、PDF、EPS、TIFF六种格式，按格式分子目录存放
+- **自动合规性检查**：检查分辨率、字体、尺寸等指标，确保符合学术出版规范
+- **跨平台兼容**：支持Windows、Linux、macOS三大平台，智能字体回退机制
 
 ## 快速开始
 
@@ -24,8 +18,8 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/yourusername/academic_plots.git
-cd academic_plots
+git clone https://github.com/yourusername/academic-plots.git
+cd academic-plots
 
 # 安装依赖
 pip install -r requirements.txt
@@ -34,202 +28,263 @@ pip install -r requirements.txt
 ### 基本使用
 
 ```python
-import matplotlib.pyplot as plt
+from utils.plot_utils import PlotTool
 import numpy as np
-from utils.plot_utils import setup_journal_style, save_multiformat
 
-# 使用计算机工程与应用期刊样式
-with setup_journal_style('cea'):
-    # 使用选项而非具体数值，自动应用期刊默认尺寸
-    fig, ax = plt.subplots(figsize=(3.15, 2.36), dpi=300)
-    
-    x = np.linspace(0, 10, 100)
-    ax.plot(x, np.sin(x), label='sin(x)')
-    ax.plot(x, np.cos(x), label='cos(x)', linestyle='--')
-    
-    # 自动应用期刊默认字号，无需手动指定
-    ax.set_xlabel('时间 (s)')
-    ax.set_ylabel('振幅')
-    ax.set_title('三角函数')
-    ax.legend()
-    
-    # 保存多格式
-    save_multiformat(fig, 'output/figure', formats=['png', 'pdf'], dpi=300)
+# 生成数据
+x = np.linspace(0, 10, 100)
+y1 = np.sin(x)
+y2 = np.cos(x)
+
+# 使用CEA模板绘制图表
+with PlotTool('cea') as tool:
+    # 使用语义尺寸二元组：单栏 + 4:3比例
+    fig, ax = tool.subplots(width_mode='single', aspect_mode='ratio_4_3')
+    tool.plot(x, y1, label='正弦曲线')
+    tool.plot(x, y2, label='余弦曲线', linestyle='--')
+    tool.set_labels('时间 (s)', '振幅', '正弦和余弦函数')
+    tool.legend()
+    tool.grid()
+    tool.save('output/example')  # 自动按格式分子目录存放
 ```
-
-## 支持的出版物类型
-
-本工具链支持多种学术出版物类型，不仅限于期刊论文：
-
-> **跨平台说明**：本工具链基于Python和Matplotlib开发，支持Windows、Linux和macOS平台。
->
-> **已适配的跨平台功能**：
-> - ✅ 文件路径处理（使用`pathlib`和`os.path`，自动适配各平台路径分隔符）
-> - ✅ 临时文件创建（使用`tempfile`模块，跨平台兼容）
-> - ✅ 外部工具调用（Inkscape命令自动适配Windows `.exe`后缀）
-> - ✅ 依赖库（所有依赖均为跨平台Python库）
->
-> **需要注意的跨平台问题**：
-> - ⚠️ **字体配置**：当前中文字体配置主要针对Windows系统（如SimHei、Microsoft YaHei等），Linux/macOS用户可能需要安装相应字体或手动配置
-> - ⚠️ **外部工具**：SVG优化功能需要安装Inkscape软件（跨平台可用，但需手动安装）
->
-> 工具内置了智能字体回退机制，会自动选择系统中可用的字体，确保在任何平台上都能正常工作。
-
-### 期刊论文
-
-| 出版物 | 代码 | 主要特点 |
-|-------|------|---------|
-| 计算机工程与应用 | `cea` | 6号宋体，矢量图，单栏8cm/双栏17cm |
-| IEEE Transactions | `ieee` | Arial字体，300dpi，单栏3.5英寸/双栏7英寸 |
-| Nature/Science | `nature` | Arial字体，RGB模式，内置色盲友好配色 |
-
-### 学位论文
-
-| 出版物 | 代码 | 主要特点 |
-|-------|------|---------|
-| 学位论文 | `thesis` | 博士/硕士论文，支持彩色和黑白打印 |
-| 博士论文 | `博士论文` | 同上 |
-| 硕士论文 | `硕士论文` | 同上 |
-
-### 教材书籍
-
-| 出版物 | 代码 | 主要特点 |
-|-------|------|---------|
-| 教材书籍 | `book` | 学术专著、教材，黑白印刷友好 |
-| 教材 | `教材` | 同上 |
-| 专著 | `专著` | 同上 |
 
 ## 项目结构
 
 ```
-academic_plots/
+python-academic-plot-toolchain/
 ├── utils/
-│   └── plot_utils/              # 核心工具包
-│       ├── __init__.py          # 包入口
-│       ├── exceptions.py        # 异常处理
-│       ├── config_manager.py    # 配置管理
-│       ├── output_manager.py    # 输出管理
-│       ├── base_styles.py       # 基础样式
-│       ├── plot_formats.py      # 图表格式
-│       ├── annotation_utils.py  # 标注工具
-│       ├── multi_plot_layout.py # 多图布局
-│       └── configs/             # 配置模块
-│           ├── publication_config.py    # 出版物配置
-│           ├── color_config.py          # 颜色配置
-│           ├── font_config.py           # 字体配置
-│           └── ...
-├── examples/                    # 示例代码
-│   └── journal_examples.py      # 期刊样式示例
-├── docs/                        # 文档
-│   ├── USAGE_GUIDE.md           # 使用指南
-│   └── paper.md                 # 论文草稿
-├── tests/                       # 测试代码
-├── requirements.txt             # 依赖列表
-└── README.md                    # 项目说明
+│   └── plot_utils/
+│       ├── __init__.py              # 模块导出
+│       ├── layout_engine.py         # 版面布局引擎（形式化约束模型）
+│       ├── quick_template.py        # 快速模板高层封装
+│       ├── plot_tool.py             # 简化API（PlotTool类）
+│       ├── config_manager.py        # 配置管理器
+│       ├── output_manager.py        # 输出管理器
+│       ├── font_manager.py          # 字体管理器
+│       ├── exceptions.py            # 异常定义
+│       └── configs/
+│           ├── __init__.py
+│           └── publication_config.py # 出版物配置
+├── examples/                         # 示例代码
+│   ├── paper_figures.py             # 论文图表示例
+│   ├── journal_examples.py          # 期刊模板示例
+│   ├── quick_template_demo.py       # 快速模板演示
+│   └── color_demo.py                # 配色方案演示
+├── docs/                            # 文档
+│   ├── paper_v2.md                  # 学术论文
+│   └── README.md                    # 本文件
+├── output/                          # 输出目录
+├── requirements.txt                 # 依赖列表
+└── README.md                        # 项目说明
 ```
-
-## 文档
-
-- [使用指南](docs/USAGE_GUIDE.md) - 详细的API文档和使用示例
-- [论文草稿](docs/paper.md) - 投稿《计算机工程与应用》的论文
-
-## 示例
-
-运行示例代码：
-
-```bash
-python examples/journal_examples.py
-```
-
-示例输出：
-- 计算机工程与应用期刊样式图表
-- IEEE Transactions期刊样式图表
-- Nature/Science期刊样式图表
-- 多子图组合示例
 
 ## 核心模块说明
 
-### 1. 配置管理模块 (config_manager.py)
+### 1. LayoutEngine - 版面布局引擎
 
-提供YAML/JSON配置加载、验证和上下文管理功能：
-
-```python
-from utils.plot_utils import ConfigManager, PlotConfigContext
-
-# 加载配置
-manager = ConfigManager()
-config = manager.load_config('config.yaml')
-
-# 使用上下文管理器
-with PlotConfigContext(config):
-    fig, ax = plt.subplots()
-    # 绘图代码...
-```
-
-### 2. 输出管理模块 (output_manager.py)
-
-提供多格式输出和合规性校验：
+基于形式化约束模型，实现语义尺寸到物理尺寸的自动计算。
 
 ```python
-from utils.plot_utils import save_multiformat, check_compliance
+from utils.plot_utils import LayoutEngine
 
-# 保存多格式
-paths = save_multiformat(fig, 'output/figure', 
-                        formats=['png', 'pdf', 'eps'], dpi=300)
+# 创建布局引擎
+engine = LayoutEngine.from_page_size('A4', columns=2)
 
-# 合规性检查
-report = check_compliance(fig, config)
-print(report)
+# 计算图形尺寸
+figsize = engine.calculate_figure_size('single', 'ratio_4_3')  # 单栏4:3
+figsize = engine.calculate_figure_size('double', 'golden')     # 跨双栏黄金比例
 ```
 
-### 3. 出版物配置模块 (publication_config.py)
+**支持的宽度模式（width\_mode）**：
 
-内置多种学术出版物的图表规范：
+- `full`: 整页宽度
+- `single`: 占满单栏
+- `half`: 占半栏
+- `double`: 跨双栏
+- `third`: 占三分之一栏
+- `two_thirds`: 占三分之二栏
+- `quarter`: 占四分之一栏
+
+**支持的比例模式（aspect\_mode）**：
+
+- `square`: 方形（1.0）
+- `ratio_4_3`: 常规横图（1.333）
+- `ratio_3_4`: 常规竖图（0.75）
+- `golden`: 黄金比例（1.618）
+- `ratio_16_9`: 宽屏（1.778）
+- `auto`: 自适应
+
+### 2. QuickTemplate - 快速模板
+
+高层封装，简化模板定义和使用流程。
 
 ```python
-from utils.plot_utils import get_publication_config, list_supported_publications
+from utils.plot_utils import get_template
 
-# 获取出版物配置
-config = get_publication_config('cea')
+# 获取预定义模板
+cea_template = get_template('cea')
+ieee_template = get_template('ieee')
+nature_template = get_template('nature')
 
-# 列出支持的出版物
-publications = list_supported_publications()
+# 使用快捷别名创建图表
+with cea_template:
+    fig, ax = cea_template.subplots(alias='single_normal')
+    ax.plot(x, y)
+    ax.set_title('单栏常规图')
+
+# 使用语义尺寸二元组
+with cea_template:
+    fig, ax = cea_template.subplots(width_mode='double', aspect_mode='golden')
+    ax.plot(x, y)
+    ax.set_title('跨双栏黄金比例图')
 ```
 
-## 依赖
+**支持的快捷别名**：
 
-- Python 3.8+
+- `single_normal`: 单栏常规图 (single, ratio\_4\_3)
+- `single_square`: 单栏方形图 (single, square)
+- `single_golden`: 单栏黄金比例图 (single, golden)
+- `half_square`: 半栏方形图 (half, square)
+- `half_normal`: 半栏常规图 (half, ratio\_4\_3)
+- `double_normal`: 双栏常规图 (double, ratio\_4\_3)
+- `double_golden`: 双栏黄金比例图 (double, golden)
+- `full_auto`: 整页自适应 (full, auto)
+
+### 3. PlotTool - 简化API
+
+一键式学术图表生成工具。
+
+```python
+from utils.plot_utils import PlotTool
+
+# 方式1: 使用上下文管理器
+with PlotTool('cea') as tool:
+    fig, ax = tool.subplots(width_mode='single', aspect_mode='ratio_4_3')
+    tool.plot(x, y, label='数据')
+    tool.set_labels('X轴', 'Y轴', '标题')
+    tool.save('output/figure')
+
+# 方式2: 一行代码快速绘图
+PlotTool.quick_plot(
+    x, y,
+    publication='ieee',
+    xlabel='Time (s)',
+    ylabel='Amplitude',
+    title='Damped Sine Wave',
+    output='output/quick_plot'
+)
+```
+
+**支持的出版物类型**：
+
+- `cea`: 《计算机工程与应用》期刊
+- `ieee`: IEEE Transactions
+- `nature`: Nature/Science
+- `thesis`: 学位论文
+- `book`: 教材书籍
+
+## 配置说明
+
+### 配置文件结构
+
+```yaml
+font:
+  family: ['FZShuSong-Z01', 'Times New Roman', 'serif']
+  titlesize: 9.0
+  labelsize: 7.5
+  ticksize: 7.5
+
+page_constraints:
+  width: 20.14
+  height: 29.7
+  margin_left: 1.4
+  margin_right: 1.4
+  margin_top: 2.0
+  margin_bottom: 2.0
+  column_count: 2
+  column_gutter: 0.67
+
+default_width_mode: 'single'
+default_aspect_mode: 'ratio_4_3'
+
+color:
+  cycle: ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD', '#8C564B']
+
+output:
+  dpi: 300
+  formats: ['png', 'svg', 'pdf', 'eps']
+
+style:
+  grid: True
+  grid_alpha: 0.3
+  tick_direction: 'in'
+```
+
+### 使用自定义配置
+
+```python
+from utils.plot_utils import PlotTool
+
+# 加载自定义配置文件
+with PlotTool(config_file='custom_config.yaml') as tool:
+    fig, ax = tool.subplots(width_mode='full', aspect_mode='ratio_4_3')
+    tool.plot(x, y)
+    tool.save('output/custom')
+```
+
+## 输出说明
+
+### 多格式输出
+
+默认输出6种格式：PNG、JPG、SVG、PDF、EPS、TIFF
+
+### 文件组织
+
+按格式分子目录存放：
+
+```
+output/
+└── example/
+    ├── png/
+    │   └── example.png
+    ├── jpg/
+    │   └── example.jpg
+    ├── svg/
+    │   └── example.svg
+    ├── pdf/
+    │   └── example.pdf
+    ├── eps/
+    │   └── example.eps
+    └── tiff/
+        └── example.tiff
+```
+
+## 配色方案
+
+所有模板默认使用彩色配色方案：
+
+- **学术彩色配色**（默认）：`#1F77B4`, `#FF7F0E`, `#2CA02C`, `#D62728`, `#9467BD`, `#8C564B`
+- **色盲友好配色**（Nature）：`#0072B2`, `#D55E00`, `#009E73`, `#CC79A7`, `#F0E442`, `#56B4E9`
+- **IEEE风格配色**：`#0066CC`, `#CC0000`, `#009900`, `#FF9900`, `#9900CC`, `#00CCCC`
+
+## 依赖要求
+
+- Python >= 3.8
 - matplotlib >= 3.5.0
-- numpy >= 1.21.0
-- pillow >= 8.0.0
-- pyyaml >= 6.0 (可选，用于YAML配置)
+- numpy >= 1.20.0
+- PyYAML >= 6.0
+- cycler >= 0.11.0
+
+## 许可证
+
+MIT License
 
 ## 贡献
 
 欢迎提交Issue和Pull Request！
 
-## 许可证
-
-本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件
-
-## 引用
-
-如果您在研究中使用了本工具链，请引用：
-
-```
-@software{academic_plots_toolchain,
-  title = {面向学术出版的Python图表工具链},
-  author = {Your Name},
-  year = {2025},
-  url = {https://github.com/yourusername/academic_plots}
-}
-```
-
 ## 联系方式
 
-- 邮箱: your.email@example.com
-- GitHub Issues: https://github.com/yourusername/academic_plots/issues
+- 项目主页：<https://github.com/yourusername/academic-plots>
+- 问题反馈：<https://github.com/yourusername/academic-plots/issues>
 
----
-
-**免责声明**：本工具链提供的期刊模板基于公开资料整理，具体投稿时请以期刊官方要求为准。
